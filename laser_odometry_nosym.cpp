@@ -10,7 +10,7 @@ using namespace Eigen;
 using namespace std;
 
 
-void RF2O_standard::initialize(unsigned int size, float FOV_rad, unsigned int odo_ID)
+void RF2O_nosym::initialize(unsigned int size, float FOV_rad, unsigned int odo_ID)
 {
     ID = odo_ID;
     cols = size;
@@ -81,7 +81,7 @@ void RF2O_standard::initialize(unsigned int size, float FOV_rad, unsigned int od
 }
 
 
-void RF2O_standard::createScanPyramid()
+void RF2O_nosym::createScanPyramid()
 {
 	const float max_range_dif = 0.3f;
 	
@@ -269,7 +269,7 @@ void RF2O_standard::createScanPyramid()
     }
 }
 
-void RF2O_standard::calculateCoord()
+void RF2O_nosym::calculateCoord()
 {		
     null.fill(false);
     num_valid_range = 0;
@@ -289,7 +289,7 @@ void RF2O_standard::calculateCoord()
 	}
 }
 
-void RF2O_standard::calculaterangeDerivativesSurface()
+void RF2O_nosym::calculaterangeDerivativesSurface()
 {	
     //Compute distances between points
     rtita.resize(cols_i);
@@ -317,7 +317,7 @@ void RF2O_standard::calculaterangeDerivativesSurface()
 }
 
 
-void RF2O_standard::computeWeights()
+void RF2O_nosym::computeWeights()
 {
 	//The maximum weight size is reserved at the constructor
     weights.fill(0.f);
@@ -347,7 +347,7 @@ void RF2O_standard::computeWeights()
 }
 
 
-void RF2O_standard::solveSystemQuadResiduals()
+void RF2O_nosym::solveSystemQuadResiduals()
 {
 	A.resize(num_valid_range,3);
     B.resize(num_valid_range);
@@ -387,7 +387,7 @@ void RF2O_standard::solveSystemQuadResiduals()
 	cov_odo = (1.f/float(num_valid_range-3))*AtA.inverse()*res.squaredNorm();
 }
 
-void RF2O_standard::solveSystemQuadResidualsNoPreW()
+void RF2O_nosym::solveSystemQuadResidualsNoPreW()
 {
     A.resize(num_valid_range,3);
     B.resize(num_valid_range);
@@ -427,7 +427,7 @@ void RF2O_standard::solveSystemQuadResidualsNoPreW()
 }
 
 
-void RF2O_standard::solveSystemMCauchy()
+void RF2O_nosym::solveSystemMCauchy()
 {
 	A.resize(num_valid_range,3); Aw.resize(num_valid_range,3);
     B.resize(num_valid_range); Bw.resize(num_valid_range);
@@ -515,7 +515,7 @@ void RF2O_standard::solveSystemMCauchy()
 	cov_odo = (1.f/float(num_valid_range-3))*AtA.inverse()*res.squaredNorm();
 }
 
-void RF2O_standard::solveSystemTruncatedQuad()
+void RF2O_nosym::solveSystemTruncatedQuad()
 {
     A.resize(num_valid_range,3); Aw.resize(num_valid_range,3);
     B.resize(num_valid_range); Bw.resize(num_valid_range);
@@ -643,7 +643,7 @@ void RF2O_standard::solveSystemTruncatedQuad()
     printf("\n Num_outliers = %d", num_outliers);
 }
 
-void RF2O_standard::solveSystemSmoothTruncQuad()
+void RF2O_nosym::solveSystemSmoothTruncQuad()
 {
     A.resize(num_valid_range,3); Aw.resize(num_valid_range,3);
     B.resize(num_valid_range); Bw.resize(num_valid_range);
@@ -789,7 +789,7 @@ void RF2O_standard::solveSystemSmoothTruncQuad()
 //    printf("\n Num_outliers = %d", num_outliers);
 }
 
-void RF2O_standard::solveSystemSmoothTruncQuadNoPreW()
+void RF2O_nosym::solveSystemSmoothTruncQuadNoPreW()
 {
     A.resize(num_valid_range,3); Aw.resize(num_valid_range,3);
     B.resize(num_valid_range); Bw.resize(num_valid_range);
@@ -917,7 +917,7 @@ void RF2O_standard::solveSystemSmoothTruncQuadNoPreW()
     cov_odo = (1.f/float(num_valid_range-3))*AtA.inverse()*res.squaredNorm();
 }
 
-void RF2O_standard::solveSystemSmoothTruncQuadFromBeginning()
+void RF2O_nosym::solveSystemSmoothTruncQuadFromBeginning()
 {
     A.resize(num_valid_range,3); Aw.resize(num_valid_range,3);
     B.resize(num_valid_range); Bw.resize(num_valid_range);
@@ -1031,7 +1031,7 @@ void RF2O_standard::solveSystemSmoothTruncQuadFromBeginning()
 }
 
 
-void RF2O_standard::performWarping()
+void RF2O_nosym::performWarping()
 {
 	Matrix3f acu_trans; 
 	acu_trans.setIdentity();
@@ -1105,7 +1105,7 @@ void RF2O_standard::performWarping()
 	}
 }
 
-void RF2O_standard::performBestWarping()
+void RF2O_nosym::performBestWarping()
 {
     Matrix3f acu_trans;
     acu_trans.setIdentity();
@@ -1164,7 +1164,7 @@ void RF2O_standard::performBestWarping()
     }
 }
 
-void RF2O_standard::performFastWarping()
+void RF2O_nosym::performFastWarping()
 {
     //Warp the second image and count the amount of pixels projected to each of the pixels in the first image
     //Camera parameters (which also depend on the level resolution)
@@ -1210,7 +1210,7 @@ void RF2O_standard::performFastWarping()
     }
 }
 
-void RF2O_standard::interpolateRange(float &range_pixel, float uwarp)
+void RF2O_nosym::interpolateRange(float &range_pixel, float uwarp)
 {
     if ((uwarp <= 0.f)||(uwarp >= cols_i-1))
     {
@@ -1231,7 +1231,7 @@ void RF2O_standard::interpolateRange(float &range_pixel, float uwarp)
     }
 }
 
-void RF2O_standard::odometryCalculation()
+void RF2O_nosym::odometryCalculation()
 {
 	//==================================================================================
 	//						DIFERENTIAL  ODOMETRY  MULTILEVEL
@@ -1286,14 +1286,14 @@ void RF2O_standard::odometryCalculation()
             //5. Solve odometry
             if (num_valid_range > 3)
             {
-                if (ID == 0)
-                    //solveSystemSmoothTruncQuad();
-                    solveSystemQuadResidualsNoPreW();
-                else if (ID == 1)
-                    solveSystemQuadResiduals();
-                else if (ID == 2)
-                    solveSystemSmoothTruncQuadNoPreW();
-                else
+//                if (ID == 0)
+//                    //solveSystemSmoothTruncQuad();
+//                    solveSystemQuadResidualsNoPreW();
+//                else if (ID == 1)
+//                    solveSystemQuadResiduals();
+//                else if (ID == 2)
+//                    solveSystemSmoothTruncQuadNoPreW();
+//                else
                     solveSystemSmoothTruncQuad();
             }
 
@@ -1325,7 +1325,7 @@ void RF2O_standard::odometryCalculation()
     PoseUpdate();
 }
 
-void RF2O_standard::filterLevelSolution()
+void RF2O_nosym::filterLevelSolution()
 {
     Vector3f kai2Pose = kai_loc_level;
 
@@ -1413,7 +1413,7 @@ void RF2O_standard::filterLevelSolution()
     transf_acu_per_iteration.push_back(acu_trans_overall);
 }
 
-void RF2O_standard::PoseUpdate()
+void RF2O_nosym::PoseUpdate()
 {
 	//First, compute the overall transformation
 	//---------------------------------------------------
@@ -1454,7 +1454,7 @@ void RF2O_standard::PoseUpdate()
 	kai_loc_old(2) = kai_abs(2);
 }
 
-void RF2O_standard::computeAverageResiduals(float &res1, float &res2, float &res3)
+void RF2O_nosym::computeAverageResiduals(float &res1, float &res2, float &res3)
 {
     //First, warp R2 towards R1
     //level = ctf_levels - 1;

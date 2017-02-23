@@ -21,6 +21,7 @@
 #include "laser_odometry_standard.h"
 #include "laser_odometry_3scans.h"
 #include "laser_odometry_refscans.h"
+#include "laser_odometry_nosym.h"
 #include "polar_match.h"
 #include "csm/csm_all.h"
 //#include "csm/sm/csm/csm_all.h"
@@ -67,10 +68,11 @@ public:
 
 
     //RF2O
-    RF2O_standard       odo_a;
-    RF2O_RefS      odo_b;
+    RF2O_standard   odo_a;
+    RF2O_RefS       odo_b;
     RF2O_RefS       odo_c;
-    RF2O_standard       odo_d;
+    RF2O_standard   odo_d;
+    RF2O_nosym      odo_nosym;
     unsigned int experiment;
 
     //Polar scan matcher
@@ -87,7 +89,7 @@ public:
 
 
     //Results
-    vector<CPose3D>	real_poses, poses_a, poses_b, poses_c, poses_d, psm_poses, csm_poses;
+    vector<CPose3D>	real_poses, poses_a, poses_b, poses_c, poses_d, poses_nosym, psm_poses, csm_poses;
     float time_a, time_b, time_c, time_d, psm_time, csm_time;
 
 	
@@ -142,16 +144,16 @@ public:
 //        myImg.loadFromXPM(map_lab_xpm);
 
         //New lab map
-//        float resolution = 0.04f;
-//        myImg.loadFromXPM(map_lab_rf2o_xpm);
+        float resolution = 0.04f;
+        myImg.loadFromXPM(map_lab_rf2o_xpm);
 
         //Original synthetic map
 //        float resolution = 0.026f; //0.02
 //        myImg.loadFromXPM(map_xpm);
 
         //Synthetic map made of lines
-        float resolution = 0.02f;
-        myImg.loadFromXPM(map_lines_rf2o_xpm);
+//        float resolution = 0.02f;
+//        myImg.loadFromXPM(map_lines_rf2o_xpm);
 
         map.loadFromBitmap(myImg,resolution);
 
@@ -222,26 +224,34 @@ public:
     {
         draw_laser_coarse = false;
 
-        if (experiment == 1)
+        if (experiment == 1) //Different versions of the standard
         {
             odo_a.initialize(laser.m_segments, laser.m_scan.aperture, 0);
             odo_b.initialize(laser.m_segments, laser.m_scan.aperture, 1);
             odo_c.initialize(laser.m_segments, laser.m_scan.aperture, 2);
             odo_d.initialize(laser.m_segments, laser.m_scan.aperture, 3);
         }
-        else if (experiment == 2)
+        else if (experiment == 2) //CA, KA y MA
         {
             odo_a.initialize(laser.m_segments, laser.m_scan.aperture, 3);
             odo_b.initialize(laser.m_segments, laser.m_scan.aperture, 1);
             odo_c.initialize(laser.m_segments, laser.m_scan.aperture, 2);
             odo_d.initialize(laser.m_segments, laser.m_scan.aperture, 3); //Not used
         }
-        else if (experiment == 3)
+        else if (experiment == 3) //Comparisons with other methods
         {
             odo_a.initialize(laser.m_segments, laser.m_scan.aperture, 3);
             odo_b.initialize(laser.m_segments, laser.m_scan.aperture, 2);
             odo_c.initialize(laser.m_segments, laser.m_scan.aperture, 3); //Not used
             odo_d.initialize(laser.m_segments, laser.m_scan.aperture, 3); //Not used
+        }
+        else if (experiment == 4) // Sym vs nosym
+        {
+            odo_a.initialize(laser.m_segments, laser.m_scan.aperture, 3);
+            odo_b.initialize(laser.m_segments, laser.m_scan.aperture, 3); //Not used
+            odo_c.initialize(laser.m_segments, laser.m_scan.aperture, 3); //Not used
+            odo_d.initialize(laser.m_segments, laser.m_scan.aperture, 3); //Not used
+            odo_nosym.initialize(laser.m_segments, laser.m_scan.aperture, 3);
         }
 
         initializeScene();
@@ -252,7 +262,8 @@ public:
         setRF2OPose(new_pose);
         new_psm_pose = new_pose; old_psm_pose = new_pose;
         new_csm_pose = new_pose; old_csm_pose = new_pose;
-        time_a = 0.f; time_b = 0.f; time_c = 0.f; time_d = 0.f; psm_time = 0.f; csm_time = 0.f;
+        time_a = 0.f; time_b = 0.f; time_c = 0.f; time_d = 0.f;
+        psm_time = 0.f; csm_time = 0.f;
     }
 
 	void initializeScene()
@@ -298,7 +309,7 @@ public:
 		robot_real->setLineWidth(2);
 		scene->insert( robot_real );
 
-        for (unsigned int r=0; r<4; r++)
+        for (unsigned int r=0; r<5; r++)
         {
             CPolyhedronPtr robot;
             robot = opengl::CPolyhedron::CreateCustomPrism(robotShape.polygons[0], robotShape.heights[0]);
@@ -310,7 +321,8 @@ public:
             if (r == 0)         {robot->setName("robot_a"); robot->setColor(0,1,0);}
             else if (r == 1)    {robot->setName("robot_b"); robot->setColor(0.8,0.4,0);}
             else if (r == 2)    {robot->setName("robot_c"); robot->setColor(0.2,0.5,0.6);}
-            else                {robot->setName("robot_d"); robot->setColor(0.7,0.2,0.3);}
+            else if (r == 3)    {robot->setName("robot_d"); robot->setColor(0.7,0.2,0.3);}
+            else                {robot->setName("robot_nosym"); robot->setColor(0.4,0.8,0.7);}
 
             scene->insert( robot );
         }
@@ -389,6 +401,10 @@ public:
         traj_lines_d->setColor(0.7,0.2,0.3);
         traj_lines_d->setLineWidth(4);
         scene->insert( traj_lines_d );
+        opengl::CSetOfLinesPtr traj_lines_nosym = opengl::CSetOfLines::Create();
+        traj_lines_nosym->setColor(0.4,0.8,0.7);
+        traj_lines_nosym->setLineWidth(4);
+        scene->insert( traj_lines_nosym );
 
         if (experiment == 3)
         {
@@ -430,6 +446,9 @@ public:
 
         obj = scene->getByName("robot_d");
         obj->setPose(odo_d.laser_pose);
+
+        obj = scene->getByName("robot_nosym");
+        obj->setPose(odo_nosym.laser_pose);
 
         if (experiment == 3)
         {
@@ -495,14 +514,18 @@ public:
         traj_lines_d = scene->getByClass<CSetOfLines> (4);
         traj_lines_d->appendLine(odo_d.laser_oldpose[0], odo_d.laser_oldpose[1], 0.2, odo_d.laser_pose[0], odo_d.laser_pose[1], 0.2);
 
+        opengl::CSetOfLinesPtr traj_lines_nosym;
+        traj_lines_nosym = scene->getByClass<CSetOfLines> (5);
+        traj_lines_nosym->appendLine(odo_nosym.laser_oldpose[0], odo_nosym.laser_oldpose[1], 0.2, odo_nosym.laser_pose[0], odo_nosym.laser_pose[1], 0.2);
+
         if (experiment == 3)
         {
             opengl::CSetOfLinesPtr traj_lines_psm;
-            traj_lines_psm = scene->getByClass<CSetOfLines> (5);
+            traj_lines_psm = scene->getByClass<CSetOfLines> (6);
             traj_lines_psm->appendLine(old_psm_pose[0], old_psm_pose[1], 0.2, new_psm_pose[0], new_psm_pose[1], 0.2);
 
             opengl::CSetOfLinesPtr traj_lines_csm;
-            traj_lines_csm = scene->getByClass<CSetOfLines> (6);
+            traj_lines_csm = scene->getByClass<CSetOfLines> (7);
             traj_lines_csm->appendLine(old_csm_pose[0], old_csm_pose[1], 0.2, new_csm_pose[0], new_csm_pose[1], 0.2);
         }
 
@@ -535,6 +558,10 @@ public:
         odo_d.laser_oldpose = CPose2D(robotpose3d);
         odo_d.kai_abs.assign(0.f); odo_d.kai_loc.assign(0.f); odo_d.kai_loc_old.assign(0.f);
 
+        odo_nosym.laser_pose = CPose2D(robotpose3d);
+        odo_nosym.laser_oldpose = CPose2D(robotpose3d);
+        odo_nosym.kai_abs.assign(0.f); odo_nosym.kai_loc.assign(0.f); odo_nosym.kai_loc_old.assign(0.f);
+
         new_psm_pose = CPose2D(robotpose3d);
         old_psm_pose = CPose2D(robotpose3d);
 
@@ -556,6 +583,9 @@ public:
 
         obj = scene->getByName("robot_d");
         obj->setPose(odo_d.laser_pose);
+
+        obj = scene->getByName("robot_nosym");
+        obj->setPose(odo_nosym.laser_pose);
 
         if (experiment == 3)
         {
@@ -601,14 +631,18 @@ public:
         traj_lines_d = scene->getByClass<CSetOfLines> (4);
         traj_lines_d->clear();
 
+        opengl::CSetOfLinesPtr traj_lines_nosym;
+        traj_lines_nosym = scene->getByClass<CSetOfLines> (5);
+        traj_lines_nosym->clear();
+
         if (experiment == 3)
         {
             opengl::CSetOfLinesPtr traj_lines_psm;
-            traj_lines_psm = scene->getByClass<CSetOfLines> (5);
+            traj_lines_psm = scene->getByClass<CSetOfLines> (6);
             traj_lines_psm->clear();
 
             opengl::CSetOfLinesPtr traj_lines_csm;
-            traj_lines_csm = scene->getByClass<CSetOfLines> (6);
+            traj_lines_csm = scene->getByClass<CSetOfLines> (7);
             traj_lines_csm->clear();
         }
 
@@ -645,11 +679,14 @@ public:
         time_a += odo_a.runtime;
 
         //Run the second version
-        for (unsigned int i=0; i<odo_b.width; i++)
-            odo_b.range_wf(i) = laser.m_scan.scan[i];
+        if (experiment < 4)
+        {
+            for (unsigned int i=0; i<odo_b.width; i++)
+                odo_b.range_wf(i) = laser.m_scan.scan[i];
 
-        odo_b.odometryCalculation();
-        time_b += odo_b.runtime;
+            odo_b.odometryCalculation();
+            time_b += odo_b.runtime;
+        }
 
         if (experiment < 3)
         {
@@ -666,6 +703,14 @@ public:
 
             odo_d.odometryCalculation();
             time_d += odo_d.runtime;
+        }
+        else if (experiment == 4)
+        {
+            //Run the nonsymmetric version
+            for (unsigned int i=0; i<odo_nosym.width; i++)
+                odo_nosym.range_wf(i) = laser.m_scan.scan[i];
+
+            odo_nosym.odometryCalculation();
         }
     }
 
@@ -690,6 +735,12 @@ public:
         for (unsigned int i=0; i<odo_d.width; i++)
             odo_d.range_wf(i) = laser.m_scan.scan[i];
         odo_d.createScanPyramid();
+
+        //Nonsymmetric version
+        for (unsigned int i=0; i<odo_nosym.width; i++)
+            odo_nosym.range_wf(i) = laser.m_scan.scan[i];
+        odo_nosym.createScanPyramid();
+
     }
 
     void setRF2OPose(const CPose2D &reset_pose)
@@ -705,17 +756,21 @@ public:
 
         odo_d.laser_pose = reset_pose;
         odo_d.laser_oldpose = reset_pose;
+
+        odo_nosym.laser_pose = reset_pose;
+        odo_nosym.laser_oldpose = reset_pose;
     }
 
 	void computeErrors(unsigned int react_freq)
 	{
 		const unsigned int size_v = real_poses.size();
-        CPose3D incr_real, incr_a, incr_b, incr_c, incr_d, incr_psm, incr_csm;
-        CPose3D dif_a, dif_b, dif_c, dif_d, dif_psm, dif_csm;
+        CPose3D incr_real, incr_a, incr_b, incr_c, incr_d, incr_nosym, incr_psm, incr_csm;
+        CPose3D dif_a, dif_b, dif_c, dif_d, dif_nosym, dif_psm, dif_csm;
         float aver_trans_error_a = 0.f, aver_rot_error_a = 0.f;
         float aver_trans_error_b = 0.f, aver_rot_error_b = 0.f;
         float aver_trans_error_c = 0.f, aver_rot_error_c = 0.f;
         float aver_trans_error_d = 0.f, aver_rot_error_d = 0.f;
+        float aver_trans_error_nosym = 0.f, aver_rot_error_nosym = 0.f;
         float aver_trans_error_psm = 0.f, aver_rot_error_psm = 0.f;
         float aver_trans_error_csm = 0.f, aver_rot_error_csm = 0.f;
 		for (unsigned int i=0; i<size_v-react_freq; i++)
@@ -726,6 +781,7 @@ public:
             incr_b = poses_b.at(i+react_freq) - poses_b.at(i);
             incr_c = poses_c.at(i+react_freq) - poses_c.at(i);
             incr_d = poses_d.at(i+react_freq) - poses_d.at(i);
+            incr_nosym = poses_nosym.at(i+react_freq) - poses_nosym.at(i);
             incr_psm = psm_poses.at(i+react_freq) - psm_poses.at(i);
             incr_csm = csm_poses.at(i+react_freq) - csm_poses.at(i);
 
@@ -734,6 +790,7 @@ public:
             dif_b = incr_real - incr_b;
             dif_c = incr_real - incr_c;
             dif_d = incr_real - incr_d;
+            dif_nosym = incr_real - incr_nosym;
             dif_psm = incr_real - incr_psm;
             dif_csm = incr_real - incr_csm;
 
@@ -742,12 +799,14 @@ public:
             aver_trans_error_b += square(dif_b[0]) + square(dif_b[1]);
             aver_trans_error_c += square(dif_c[0]) + square(dif_c[1]);
             aver_trans_error_d += square(dif_d[0]) + square(dif_d[1]);
+            aver_trans_error_nosym += square(dif_nosym[0]) + square(dif_nosym[1]);
             aver_trans_error_psm += square(dif_psm[0]) + square(dif_psm[1]);
             aver_trans_error_csm += square(dif_csm[0]) + square(dif_csm[1]);
             aver_rot_error_a += square(dif_a.yaw());
             aver_rot_error_b += square(dif_b.yaw());
             aver_rot_error_c += square(dif_c.yaw());
             aver_rot_error_d += square(dif_d.yaw());
+            aver_rot_error_nosym += square(dif_nosym.yaw());
             aver_rot_error_psm += square(dif_psm.yaw());
             aver_rot_error_csm += square(dif_csm.yaw());
 		}
@@ -757,12 +816,14 @@ public:
         CPose3D total_drift_b = poses_b.back() - real_poses.back();
         CPose3D total_drift_c = poses_c.back() - real_poses.back();
         CPose3D total_drift_d = poses_d.back() - real_poses.back();
+        CPose3D total_drift_nosym = poses_nosym.back() - real_poses.back();
         CPose3D total_drift_psm = psm_poses.back() - real_poses.back();
         CPose3D total_drift_csm = csm_poses.back() - real_poses.back();
         const float drift_a = sqrtf(square(total_drift_a[0]) + square(total_drift_a[1]));
         const float drift_b = sqrtf(square(total_drift_b[0]) + square(total_drift_b[1]));
         const float drift_c = sqrtf(square(total_drift_c[0]) + square(total_drift_c[1]));
         const float drift_d = sqrtf(square(total_drift_d[0]) + square(total_drift_d[1]));
+        const float drift_nosym = sqrtf(square(total_drift_nosym[0]) + square(total_drift_nosym[1]));
         const float drift_psm = sqrtf(square(total_drift_psm[0]) + square(total_drift_psm[1]));
         const float drift_csm = sqrtf(square(total_drift_csm[0]) + square(total_drift_csm[1]));
 
@@ -785,7 +846,7 @@ public:
             printf("\n Runtimes: a = %f, b = %f, c = %f", time_a/size_v, time_b/size_v, time_c/size_v);
             printf("\n Overall drift: a = %f, b = %f, c = %f", drift_a, drift_b, drift_c);
         }
-        else
+        else if (experiment == 3)
         {
             printf("\n Aver_trans_a = %f m, Aver_rot_a = %f grad", sqrtf(aver_trans_error_a/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_a/(size_v-react_freq)));
             printf("\n Aver_trans_b = %f m, Aver_rot_b = %f grad", sqrtf(aver_trans_error_b/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_b/(size_v-react_freq)));
@@ -793,6 +854,12 @@ public:
             printf("\n Aver_trans_csm = %f m, Aver_rot_csm = %f grad", sqrtf(aver_trans_error_csm/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_csm/(size_v-react_freq)));
             printf("\n Runtimes: a = %f, b = %f, psm = %f, csm = %f", time_a/size_v, time_b/size_v, psm_time/size_v, csm_time/size_v);
             printf("\n Overall drift: a = %f, b = %f, psm = %f, csm = %f", drift_a, drift_b, drift_psm, drift_csm);
+        }
+        else if (experiment == 4)
+        {
+            printf("\n Aver_trans_sym = %f m, Aver_rot_sym = %f grad", sqrtf(aver_trans_error_a/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_a/(size_v-react_freq)));
+            printf("\n Aver_trans_nosym = %f m, Aver_rot_nosym = %f grad", sqrtf(aver_trans_error_nosym/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_nosym/(size_v-react_freq)));
+            printf("\n Overall drift: sym = %f, nosym = %f", drift_a, drift_nosym);
         }
         fflush(stdout);
 	}
@@ -1095,6 +1162,11 @@ public:
                 m_fres << poses_b[i][0] << " " << poses_b[i][1] << " " << poses_b[i][3] << " ";
                 m_fres << csm_poses[i][0] << " " << csm_poses[i][1] << " " << csm_poses[i][3] << " ";
                 m_fres << psm_poses[i][0] << " " << psm_poses[i][1] << " " << psm_poses[i][3] << " ";
+            }
+            else if (experiment == 4)
+            {
+                m_fres << poses_a[i][0] << " " << poses_a[i][1] << " " << poses_a[i][3] << " ";
+                m_fres << poses_nosym[i][0] << " " << poses_nosym[i][1] << " " << poses_nosym[i][3] << " ";
             }
             m_fres << "\n";
         }

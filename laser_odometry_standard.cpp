@@ -1503,7 +1503,6 @@ void RF2O_standard::odometryCalculation()
             if (num_valid_range > 3)
             {
                 if (ID == 0)
-                    //solveSystemSmoothTruncQuad();
                     solveSystemQuadResidualsNoPreW();
                 else if (ID == 1)
                     solveSystemQuadResiduals();

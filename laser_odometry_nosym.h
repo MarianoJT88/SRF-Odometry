@@ -19,7 +19,7 @@
 //}
 
 
-class RF2O_standard {
+class RF2O_nosym {
 public:
 
     //Scans and cartesian coordinates

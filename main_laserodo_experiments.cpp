@@ -163,7 +163,11 @@ int main()
 
 
     //Initialize all methods - Change classes as well!!
-    ReactInterface.experiment = 3; //1 - pre-weights and robust, 2 - consecutive scan vs keyscan vs 3 scans, 3 - our method against CSM and PSM
+    //Experiment 1 - pre-weights and robust
+    //Experiment 2 - consecutive scan vs keyscan vs 3 scans
+    //Experiment 3 - our method against CSM and PSM
+    //Experiment 4 - symmetric vs nonsymmetric formulation
+    ReactInterface.experiment = 4;
     ReactInterface.initializeEverything();
     rn3d.initialize();
 
@@ -177,7 +181,7 @@ int main()
     int iter_count = 0;
     TPoint3D last_Target_Pos(0,0,0);
     unsigned int odo_freq = 2;
-    unsigned int react_sim_per_est = 3;
+    unsigned int react_sim_per_est = 4;
     float sim_period = 1.f/float(odo_freq*react_sim_per_est);
 
     CTicTac target_clock;
@@ -226,6 +230,7 @@ int main()
             ReactInterface.poses_b.clear(); ReactInterface.time_b = 0.f;
             ReactInterface.poses_c.clear(); ReactInterface.time_c = 0.f;
             ReactInterface.poses_d.clear(); ReactInterface.time_d = 0.f;
+            ReactInterface.poses_nosym.clear();
             ReactInterface.psm_poses.clear(); ReactInterface.psm_time = 0.f;
             ReactInterface.csm_poses.clear(); ReactInterface.csm_time = 0.f;
             break;
@@ -275,6 +280,7 @@ int main()
                 ReactInterface.poses_b.push_back(CPose3D(ReactInterface.odo_b.laser_pose));
                 ReactInterface.poses_c.push_back(CPose3D(ReactInterface.odo_c.laser_pose));
                 ReactInterface.poses_d.push_back(CPose3D(ReactInterface.odo_d.laser_pose));
+                ReactInterface.poses_nosym.push_back(CPose3D(ReactInterface.odo_nosym.laser_pose));
                 ReactInterface.psm_poses.push_back((CPose3D(ReactInterface.new_psm_pose)));
                 ReactInterface.csm_poses.push_back((CPose3D(ReactInterface.new_csm_pose)));
 
@@ -330,10 +336,11 @@ int main()
         {
             stop = true;
             ReactInterface.computeErrors(odo_freq);
-            //ReactInterface.saveResults(odo_freq);
+            ReactInterface.saveResults(odo_freq);
         }
     }
 
+    system::os::getch();
     return 0;
 }
 
