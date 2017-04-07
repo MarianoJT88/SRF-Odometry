@@ -69,6 +69,7 @@ public:
     unsigned int num_robots;
     CRawlog  dataset[8];
     unsigned int rawlog_count[8];
+    unsigned int rawlog_ini, rawlog_end;
     bool dataset_finished[8];
     string filename[8];
     unsigned int sequence_id;
@@ -79,14 +80,15 @@ public:
 	COpenGLScenePtr			scene;
     bool draw_srf_ca;
     bool draw_srf_ma;
+    bool draw_srf_ka;
     bool draw_csm;
     bool draw_psm;
-    bool draw_vp1;
 
 
     //RF2O
-    RF2O_standard        odo;
-    RF2O_RefS       odo_test;
+    RF2O_standard       odo;
+    RF2O_RefS           odo_test;
+    RF2O_RefS           odo_KA;
 
     //Polar scan matcher
     CPose2D     new_psm_pose, old_psm_pose;
@@ -102,19 +104,22 @@ public:
 
 
     //Results
-    vector<CPose3D>	real_poses, est_poses, test_poses, psm_poses, csm_poses;
-    float est_time, test_time, psm_time, csm_time;
+    vector<CPose3D>	real_poses, est_poses, test_poses, KA_poses, psm_poses, csm_poses;
+    float est_time, test_time, KA_time, psm_time, csm_time;
 
 
     void openRawlogs()
     {
         string folder;
         if (sequence_id == 0)
-            folder = "/usr/wiss/jaimez/Dropbox/LaserOdo - shared/Video TRO/captures for the video/Simulations/all methods/ROSBAG_RAWLOG/3_mob_obj/";
+            //folder = "/usr/wiss/jaimez/Dropbox/LaserOdo - shared/Video TRO/captures for the video/Simulations/all methods/ROSBAG_RAWLOG/3_mob_obj/";
+            folder = "/home/mariano/Dropbox/LaserOdo - shared/Video TRO/captures for the video/Simulations/all methods/ROSBAG_RAWLOG/3_mob_obj/";
         if (sequence_id == 1)
-            folder = "/usr/wiss/jaimez/Dropbox/LaserOdo - shared/Video TRO/captures for the video/Simulations/all methods/ROSBAG_RAWLOG/5_mob_obj/";
+            //folder = "/usr/wiss/jaimez/Dropbox/LaserOdo - shared/Video TRO/captures for the video/Simulations/all methods/ROSBAG_RAWLOG/5_mob_obj/";
+            folder = "/home/mariano/Dropbox/LaserOdo - shared/Video TRO/captures for the video/Simulations/all methods/ROSBAG_RAWLOG/5_mob_obj/";
         if (sequence_id == 2)
-            folder = "/usr/wiss/jaimez/Dropbox/LaserOdo - shared/Video TRO/captures for the video/Simulations/all methods/ROSBAG_RAWLOG/7_mob_obj/";
+            //folder = "/usr/wiss/jaimez/Dropbox/LaserOdo - shared/Video TRO/captures for the video/Simulations/all methods/ROSBAG_RAWLOG/7_mob_obj/";
+            folder = "/home/mariano/Dropbox/LaserOdo - shared/Video TRO/captures for the video/Simulations/all methods/ROSBAG_RAWLOG/7_mob_obj/";
 
         for (unsigned int r=0; r<num_robots; r++)
         {
@@ -122,7 +127,7 @@ public:
             sprintf(dset, "robot_%d.rawlog", r);
             filename[r] = folder + dset;
 
-            rawlog_count[r] = 0;
+            rawlog_count[r] = rawlog_ini;
             dataset_finished[r] = false;
             if (!dataset[r].loadFromRawLogFile(filename[r]))
                 printf("\nCouldn't open rawlog file %d...", r);
@@ -159,7 +164,7 @@ public:
 
 
                 rawlog_count[r]++;
-                if (dataset[r].size() <= rawlog_count[r])
+                if ((rawlog_end <= rawlog_count[r])||(dataset[r].size() <= rawlog_count[r]))
                 {
                     dataset_finished[r] = true;
                     return;
@@ -178,7 +183,7 @@ public:
 
                 rawlog_count[r]++;
 
-                if (dataset[r].size() <= rawlog_count[r])
+                if ((rawlog_end <= rawlog_count[r])||(dataset[r].size() <= rawlog_count[r]))
                     dataset_finished[r] = true;
             }
         }
@@ -195,7 +200,7 @@ public:
         for (unsigned int r=1; r<num_robots; r++)
         {
             //Generate points from the robot shape
-            const unsigned int num_interp = 41;
+            const unsigned int num_interp = 101;
             for (unsigned int k=0; k<3; k++)
                 for (float alpha = 0; alpha <= 1.f; alpha += 1.f/float(num_interp-1))
                 {
@@ -241,7 +246,7 @@ public:
 		
 		//Correct points with null observations (set them to 0)
 		for (unsigned int i=0; i<laser.m_scan.scan.size(); i++)
-            if ((laser.m_scan.scan[i] > 0.995f*laser.m_scan.maxRange)||(laser.m_scan.scan[i] < 0.04f))
+            if ((laser.m_scan.scan[i] > 0.995f*laser.m_scan.maxRange)||(laser.m_scan.scan[i] < 0.5f))
             {
 				laser.m_scan.scan[i] = 0.f;
                 laser.m_scan.validRange[i] = false;
@@ -316,12 +321,15 @@ public:
         //Visualization
         draw_srf_ca = true;
         draw_srf_ma = true;
-        draw_psm = true;
-        draw_csm = true;
-        draw_vp1 = false;
+        draw_srf_ka = true;
+        draw_psm = false;
+        draw_csm = false;
 
         //Rawlogs
-        sequence_id = 2;
+        if (sequence_id == 0)       { rawlog_ini = 450; rawlog_end = 3000; }
+        else if (sequence_id == 1)  { rawlog_ini = 450; rawlog_end = 1900; }
+        else if (sequence_id == 2)  { rawlog_ini = 450; rawlog_end = 4000; }
+
 
         num_robots = 4 + 2*sequence_id;
         openRawlogs();
@@ -343,6 +351,7 @@ public:
 
         odo.initialize(laser.m_segments, laser.m_scan.aperture, 3);
         odo_test.initialize(laser.m_segments, laser.m_scan.aperture, 2);
+        odo_KA.initialize(laser.m_segments, laser.m_scan.aperture, 1);
         pm_init();          //Contains precomputed range bearings and their sines/cosines
         Init_Params_csm();
 
@@ -450,6 +459,24 @@ public:
             traj_lines_test->setLineWidth(4);
             traj_lines_test->setName("traj_srf_ma");
             scene->insert( traj_lines_test );
+        }
+
+        if (draw_srf_ka)
+        {
+            CPolyhedronPtr robot_KA;
+            robot_KA = opengl::CPolyhedron::CreateCustomPrism(robotShape.polygons[0], robot_height);
+            robot_KA->setName("robot_srf_ka");
+            robot_KA->setPose(robotpose3d);
+            robot_KA->setColor(0.2f,0.6f,0.7f);
+            robot_KA->setWireframe(true);
+            robot_KA->setLineWidth(4);
+            scene->insert( robot_KA );
+
+            CSetOfLinesPtr traj_lines_ka = opengl::CSetOfLines::Create();
+            traj_lines_ka->setColor(0.2f,0.6f,0.7f);
+            traj_lines_ka->setLineWidth(4);
+            traj_lines_ka->setName("traj_srf_ka");
+            scene->insert( traj_lines_ka );
         }
 
         if (draw_psm)
@@ -567,6 +594,17 @@ public:
 //                traj_lines_test->removeFirstLine();
         }
 
+        if (draw_srf_ka)
+        {
+            obj = scene->getByName("robot_srf_ka");
+            obj->setPose(odo_KA.laser_pose);
+
+            CSetOfLinesPtr traj_lines_ka = static_cast<CSetOfLinesPtr>( scene->getByName("traj_srf_ka") );
+            traj_lines_ka->appendLine(odo_KA.laser_oldpose[0], odo_KA.laser_oldpose[1], 0.02, odo_KA.laser_pose[0], odo_KA.laser_pose[1], 0.02);
+//            if (traj_lines_test->size() > max_number_lines)
+//                traj_lines_test->removeFirstLine();
+        }
+
         if (draw_psm)
         {
             obj = scene->getByName("robot_psm");
@@ -629,6 +667,12 @@ public:
         odo_test.kai_loc.assign(0.f);
         odo_test.kai_loc_old.assign(0.f);
 
+        odo_KA.laser_pose = CPose2D(robotpose3d);
+        odo_KA.laser_oldpose = CPose2D(robotpose3d);
+        odo_KA.kai_abs.assign(0.f);
+        odo_KA.kai_loc.assign(0.f);
+        odo_KA.kai_loc_old.assign(0.f);
+
         new_psm_pose = CPose2D(robotpose3d);
         old_psm_pose = CPose2D(robotpose3d);
         new_csm_pose = CPose2D(robotpose3d);
@@ -657,6 +701,15 @@ public:
 
             CSetOfLinesPtr traj_lines_test = static_cast<CSetOfLinesPtr>( scene->getByName("traj_srf_ma") );
             traj_lines_test->clear();
+        }
+
+        if (draw_srf_ka)
+        {
+            obj = scene->getByName("robot_srf_ka");
+            obj->setPose(odo_KA.laser_pose);
+
+            CSetOfLinesPtr traj_lines_ka = static_cast<CSetOfLinesPtr>( scene->getByName("traj_srf_ka") );
+            traj_lines_ka->clear();
         }
 
         if (draw_psm)
@@ -717,32 +770,44 @@ public:
 
     void runRF2O()
     {
-        //Run the linear version
+        //Run CA
         for (unsigned int i=0; i<odo.width; i++)
             odo.range_wf(i) = laser.m_scan.scan[i];
 
         odo.odometryCalculation();
         est_time += odo.runtime;
 
-        //Run the robust nonlinear version
+        //Run MA
         for (unsigned int i=0; i<odo_test.width; i++)
             odo_test.range_wf(i) = laser.m_scan.scan[i];
 
         odo_test.odometryCalculation();
         test_time += odo_test.runtime;
+
+        //Run KA
+        for (unsigned int i=0; i<odo.width; i++)
+            odo_KA.range_wf(i) = laser.m_scan.scan[i];
+
+        odo_KA.odometryCalculation();
+        KA_time += odo.runtime;
     }
 
     void loadFirstScanRF2O()
     {
-        //Linear version
+        //CA
         for (unsigned int i=0; i<odo.width; i++)
             odo.range_wf(i) = laser.m_scan.scan[i];
         odo.createScanPyramid();
 
-        //Nonlinear version
+        //MA
         for (unsigned int i=0; i<odo_test.width; i++)
             odo_test.range_wf(i) = laser.m_scan.scan[i];
         odo_test.createScanPyramid();
+
+        //KA
+        for (unsigned int i=0; i<odo_test.width; i++)
+            odo_KA.range_wf(i) = laser.m_scan.scan[i];
+        odo_KA.createScanPyramid();
     }
 
     void setRF2OPose(const CPose2D &reset_pose)
@@ -752,15 +817,19 @@ public:
 
         odo_test.laser_pose = reset_pose;
         odo_test.laser_oldpose = reset_pose;
+
+        odo_KA.laser_pose = reset_pose;
+        odo_KA.laser_oldpose = reset_pose;
     }
 
 	void computeErrors(unsigned int react_freq)
 	{
 		const unsigned int size_v = real_poses.size();
-        CPose3D incr_real, incr_est, incr_test, incr_psm, incr_csm;
-        CPose3D dif_est, dif_test, dif_psm, dif_csm;
+        CPose3D incr_real, incr_est, incr_test, incr_KA, incr_psm, incr_csm;
+        CPose3D dif_est, dif_test, dif_KA, dif_psm, dif_csm;
         float aver_trans_error_est = 0.f, aver_rot_error_est = 0.f;
         float aver_trans_error_test = 0.f, aver_rot_error_test = 0.f;
+        float aver_trans_error_KA = 0.f, aver_rot_error_KA = 0.f;
         float aver_trans_error_psm = 0.f, aver_rot_error_psm = 0.f;
         float aver_trans_error_csm = 0.f, aver_rot_error_csm = 0.f;
 		for (unsigned int i=0; i<size_v-react_freq; i++)
@@ -769,32 +838,52 @@ public:
 			incr_real = real_poses.at(i+react_freq) - real_poses.at(i);
 			incr_est = est_poses.at(i+react_freq) - est_poses.at(i);
 			incr_test = test_poses.at(i+react_freq) - test_poses.at(i);
+            incr_KA = KA_poses.at(i+react_freq) - KA_poses.at(i);
             incr_psm = psm_poses.at(i+react_freq) - psm_poses.at(i);
             incr_csm = csm_poses.at(i+react_freq) - csm_poses.at(i);
 
 			//Compute differences between the estimates and the real one
 			dif_est = incr_real - incr_est;
 			dif_test = incr_real - incr_test;
+            dif_KA = incr_real - incr_KA;
             dif_psm = incr_real - incr_psm;
             dif_csm = incr_real - incr_csm;
 
 			//Add their contribution to the average errors
 			aver_trans_error_est += sqrtf(square(dif_est[0]) + square(dif_est[1]));
 			aver_trans_error_test += sqrtf(square(dif_test[0]) + square(dif_test[1]));
+            aver_trans_error_KA += sqrtf(square(dif_KA[0]) + square(dif_KA[1]));
             aver_trans_error_psm += sqrtf(square(dif_psm[0]) + square(dif_psm[1]));
             aver_trans_error_csm += sqrtf(square(dif_csm[0]) + square(dif_csm[1]));
 			aver_rot_error_est += 57.3f*abs(dif_est.yaw());
 			aver_rot_error_test += 57.3f*abs(dif_test.yaw());
+            aver_rot_error_KA += 57.3f*abs(dif_KA.yaw());
             aver_rot_error_psm += 57.3f*abs(dif_psm.yaw());
             aver_rot_error_csm += 57.3f*abs(dif_csm.yaw());
 		}
 
+        //Overall drift
+        CPose3D total_drift_est = est_poses.back() - real_poses.back();
+        CPose3D total_drift_test = test_poses.back() - real_poses.back();
+        CPose3D total_drift_KA = KA_poses.back() - real_poses.back();
+        CPose3D total_drift_psm = psm_poses.back() - real_poses.back();
+        CPose3D total_drift_csm = csm_poses.back() - real_poses.back();
+        const float drift_est = sqrtf(square(total_drift_est[0]) + square(total_drift_est[1]));
+        const float drift_test = sqrtf(square(total_drift_test[0]) + square(total_drift_test[1]));
+        const float drift_KA = sqrtf(square(total_drift_KA[0]) + square(total_drift_KA[1]));
+        const float drift_psm = sqrtf(square(total_drift_psm[0]) + square(total_drift_psm[1]));
+        const float drift_csm = sqrtf(square(total_drift_csm[0]) + square(total_drift_csm[1]));
+
 		//Show the errors
-        printf("\n Aver_trans_est = %f m, Aver_rot_est = %f grad", aver_trans_error_est/(size_v-react_freq), aver_rot_error_est/(size_v-react_freq));
-        printf("\n Aver_trans_test = %f m, Aver_rot_test = %f grad", aver_trans_error_test/(size_v-react_freq), aver_rot_error_test/(size_v-react_freq));
+        printf("\n Aver_trans_CA = %f m, Aver_rot_CA = %f grad", aver_trans_error_est/(size_v-react_freq), aver_rot_error_est/(size_v-react_freq));
+        printf("\n Aver_trans_MA = %f m, Aver_rot_MA = %f grad", aver_trans_error_test/(size_v-react_freq), aver_rot_error_test/(size_v-react_freq));
+        printf("\n Aver_trans_KA = %f m, Aver_rot_KA = %f grad", aver_trans_error_KA/(size_v-react_freq), aver_rot_error_KA/(size_v-react_freq));
         printf("\n Aver_trans_psm = %f m, Aver_rot_psm = %f grad", aver_trans_error_psm/(size_v-react_freq), aver_rot_error_psm/(size_v-react_freq));
         printf("\n Aver_trans_csm = %f m, Aver_rot_csm = %f grad", aver_trans_error_csm/(size_v-react_freq), aver_rot_error_csm/(size_v-react_freq));
+        printf("\n Overall drift: CA = %.4f, MA = %.4f, KA = %.4f, psm = %.4f, csm = %.4f", drift_est, drift_test, drift_KA, drift_psm, drift_csm);
         printf("\n Runtimes: rf2o_est = %f, rf2o_test = %f, psm = %f, csm = %f", est_time/size_v, test_time/size_v, psm_time/size_v, csm_time/size_v);
+        printf("\n Time of the experiment = %f", float(size_v/react_freq));
+        printf("\n Rawlog count = %d", rawlog_count[0]);
         fflush(stdout);
 	}
 
@@ -1098,12 +1187,14 @@ public:
         m_fres.open(aux);
 
 
-        //Save freq, real_pose (x,y,theta), est_pose (x,y,theta)
+        //Save freq, real_pose (x,y,theta), est_pose (CA), test_pose(MA), KA_pose(KA)
         for (unsigned int i=0; i<real_poses.size(); i++)
         {
             m_fres << freq << " ";
             m_fres << real_poses[i][0] << " " << real_poses[i][1] << " " << real_poses[i][3] << " ";
             m_fres << est_poses[i][0] << " " << est_poses[i][1] << " " << est_poses[i][3] << " ";
+            m_fres << test_poses[i][0] << " " << test_poses[i][1] << " " << test_poses[i][3] << " ";
+            m_fres << KA_poses[i][0] << " " << KA_poses[i][1] << " " << KA_poses[i][3] << " ";
             m_fres << "\n";
         }
 

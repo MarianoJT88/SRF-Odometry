@@ -166,6 +166,7 @@ int main()
 
 
     //Initialize all methods
+    ReactInterface.sequence_id = 2; // 0 - 3 robots, 1 - 5 robots, 2 - 7 robots
     ReactInterface.initializeEverything();
     rn3d.initialize();
 
@@ -223,6 +224,7 @@ int main()
             ReactInterface.real_poses.clear();
             ReactInterface.est_poses.clear(); ReactInterface.est_time = 0.f;
             ReactInterface.test_poses.clear(); ReactInterface.test_time = 0.f;
+            ReactInterface.KA_poses.clear(); ReactInterface.KA_time = 0.f;
             ReactInterface.psm_poses.clear(); ReactInterface.psm_time = 0.f;
             ReactInterface.csm_poses.clear(); ReactInterface.csm_time = 0.f;
             break;
@@ -250,17 +252,18 @@ int main()
                 ReactInterface.runRF2O();
 
                 //Execute PSM
-                if (ReactInterface.draw_psm) ReactInterface.runPolarScanMatching();
+                ReactInterface.runPolarScanMatching();
 
                 //Execute CSM
-                if (ReactInterface.draw_csm) ReactInterface.runCanonicalScanMatching();
+                ReactInterface.runCanonicalScanMatching();
 
-    //            //Add the new poses
-    //            ReactInterface.real_poses.push_back(CPose3D(ReactInterface.new_pose));
-    //            ReactInterface.est_poses.push_back(CPose3D(ReactInterface.odo.laser_pose));
-    //            ReactInterface.test_poses.push_back(CPose3D(ReactInterface.odo_test.laser_pose));
-    //            ReactInterface.psm_poses.push_back((CPose3D(ReactInterface.new_psm_pose)));
-    //            ReactInterface.csm_poses.push_back((CPose3D(ReactInterface.new_csm_pose)));
+                //Add the new poses
+                ReactInterface.real_poses.push_back(CPose3D(ReactInterface.new_pose));
+                ReactInterface.est_poses.push_back(CPose3D(ReactInterface.odo.laser_pose));
+                ReactInterface.test_poses.push_back(CPose3D(ReactInterface.odo_test.laser_pose));
+                ReactInterface.KA_poses.push_back(CPose3D(ReactInterface.odo_KA.laser_pose));
+                ReactInterface.psm_poses.push_back((CPose3D(ReactInterface.new_psm_pose)));
+                ReactInterface.csm_poses.push_back((CPose3D(ReactInterface.new_csm_pose)));
             }
 
             count++;
@@ -271,6 +274,19 @@ int main()
 
             if (one_step)
                 one_step = false;
+
+
+            //Check termination condition
+            bool finish = true;
+            for (unsigned int r=0; r < ReactInterface.num_robots; r++)
+                finish *= ReactInterface.dataset_finished[r];
+
+            if (finish)
+            {
+                ReactInterface.computeErrors(odo_freq);
+                ReactInterface.saveResults(odo_freq);
+                working = false;
+            }
 
         }
     }

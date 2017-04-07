@@ -40,7 +40,7 @@ const char *default_cfg_txt =
     "LASER_POSE = 0 0 0.1 0 0 0 \n"
     "LASER_MAX_RANGE = 30.0 \n"
     "LASER_APERTURE = 270 \n"
-    "LASER_STD_ERROR = 0.01 \n" //0.01
+    "LASER_STD_ERROR = 0.1 \n" //0.01
 	"LASER_LEVEL = 1 \n"
     "LASER_SEGMENTS = 1080 \n\n"
 
@@ -123,7 +123,7 @@ const char *default_cfg_txt =
 	"; 3: Closer to target (euclidean) \n"
 	"; 4: Hysteresis \n"
 
-	"WIDE_GAP_SIZE_PERCENT = 0.25			; The robot travels nearer to obstacles if this parameter is small. \n"
+    "WIDE_GAP_SIZE_PERCENT = 0.25			; The robot travels nearer to obstacles if this parameter is small. \n" // 0.25
 	"										; The smaller it is, the closer the selected direction is respect to \n"
 	"										; the Target direction in TP-Space (under some conditions) \n"
 	"MAX_SECTOR_DIST_FOR_D2_PERCENT = 0.25	; \n"
@@ -167,7 +167,7 @@ int main()
     //Experiment 2 - consecutive scan vs keyscan vs 3 scans
     //Experiment 3 - our method against CSM and PSM
     //Experiment 4 - symmetric vs nonsymmetric formulation
-    ReactInterface.experiment = 4;
+    ReactInterface.experiment = 2;
     ReactInterface.initializeEverything();
     rn3d.initialize();
 
@@ -180,8 +180,8 @@ int main()
     int pushed_key = 0;
     int iter_count = 0;
     TPoint3D last_Target_Pos(0,0,0);
-    unsigned int odo_freq = 2;
-    unsigned int react_sim_per_est = 4;
+    unsigned int odo_freq = 5;
+    unsigned int react_sim_per_est = 2;
     float sim_period = 1.f/float(odo_freq*react_sim_per_est);
 
     CTicTac target_clock;
@@ -332,7 +332,7 @@ int main()
             ReactInterface.scene->getByClass<CDisk>(0)->setLocation(last_Target_Pos.x, last_Target_Pos.y, last_Target_Pos.z);
         }
 
-        if (iter_count > 3000*react_sim_per_est)
+        if (iter_count > 6000) //(iter_count > 3000*react_sim_per_est)
         {
             stop = true;
             ReactInterface.computeErrors(odo_freq);
@@ -340,7 +340,7 @@ int main()
         }
     }
 
-    system::os::getch();
+    //system::os::getch();
     return 0;
 }
 

@@ -121,7 +121,7 @@ public:
 		
 		//Correct points with null observations (set them to 0)
 		for (unsigned int i=0; i<laser.m_scan.scan.size(); i++)
-            if (laser.m_scan.scan[i] > 0.995f*laser.m_scan.maxRange)
+            if ((laser.m_scan.scan[i] > 0.995f*laser.m_scan.maxRange)||(laser.m_scan.scan[i] < 0.5f))
             {
 				laser.m_scan.scan[i] = 0.f;
                 laser.m_scan.validRange[i] = false;
@@ -840,11 +840,11 @@ public:
         }
         else if (experiment == 2)
         {
-            printf("\n Aver_trans_a = %f m, Aver_rot_a = %f grad", sqrtf(aver_trans_error_a/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_a/(size_v-react_freq)));
-            printf("\n Aver_trans_b = %f m, Aver_rot_b = %f grad", sqrtf(aver_trans_error_b/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_b/(size_v-react_freq)));
-            printf("\n Aver_trans_c = %f m, Aver_rot_c = %f grad", sqrtf(aver_trans_error_c/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_c/(size_v-react_freq)));
-            printf("\n Runtimes: a = %f, b = %f, c = %f", time_a/size_v, time_b/size_v, time_c/size_v);
-            printf("\n Overall drift: a = %f, b = %f, c = %f", drift_a, drift_b, drift_c);
+            printf("\n Aver_trans_CA = %f m, Aver_rot_CA = %f grad", sqrtf(aver_trans_error_a/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_a/(size_v-react_freq)));
+            printf("\n Aver_trans_KA = %f m, Aver_rot_KA = %f grad", sqrtf(aver_trans_error_b/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_b/(size_v-react_freq)));
+            printf("\n Aver_trans_MA = %f m, Aver_rot_MA = %f grad", sqrtf(aver_trans_error_c/(size_v-react_freq)), 57.3f*sqrtf(aver_rot_error_c/(size_v-react_freq)));
+            printf("\n Runtimes: CA = %f, KA = %f, MA = %f", time_a/size_v, time_b/size_v, time_c/size_v);
+            printf("\n Overall drift: CA = %f, KA = %f, MA = %f", drift_a, drift_b, drift_c);
         }
         else if (experiment == 3)
         {

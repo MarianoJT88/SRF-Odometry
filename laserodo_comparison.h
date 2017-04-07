@@ -160,12 +160,12 @@ public:
 //        myImg.loadFromXPM(map_lab_xpm);
 
         //New lab map
-//        float resolution = 0.04f;
-//        myImg.loadFromXPM(map_lab_rf2o_xpm);
+        float resolution = 0.04f;
+        myImg.loadFromXPM(map_lab_rf2o_xpm);
 
         //Original synthetic map
-        float resolution = 0.026f; //0.02
-        myImg.loadFromXPM(map_xpm);
+//        float resolution = 0.026f; //0.02
+//        myImg.loadFromXPM(map_xpm);
 
         //Synthetic map made of lines
 //        float resolution = 0.02f;
