@@ -117,16 +117,16 @@ public:
 		CImage myImg;
 
         //Original synthetic map
-        float resolution = 0.025f; //0.02
-        myImg.loadFromXPM(map_xpm);
+        //float resolution = 0.025f; //0.02
+        //myImg.loadFromXPM(map_xpm);
 
         //Synthetic map made of lines
 //        float resolution = 0.02f;
 //        myImg.loadFromXPM(map_lines_rf2o_xpm);
 
         //Lab map (new)
-//        float resolution = 0.045f;
-//        myImg.loadFromXPM(map_lab_rf2o_xpm);
+        float resolution = 0.045f;
+        myImg.loadFromXPM(map_lab_rf2o_xpm);
 
         map.loadFromBitmap(myImg,resolution);
 
@@ -196,7 +196,7 @@ public:
     void initilizeEverything()
     {
         odo.initialize(laser.m_segments, laser.m_scan.aperture, false);
-        odo_test.initialize(laser.m_segments, laser.m_scan.aperture, true);
+        odo_test.initialize(laser.m_segments, laser.m_scan.aperture, 3);
         initializeScene();
         loadFirstScanRF2O();
         setRF2OPose(new_pose);
@@ -226,9 +226,9 @@ public:
 		scene->insert(gl_grid);
 
 		//A CornerXYZ object is inserted as an absolute frame of reference
-		CSetOfObjectsPtr ref = opengl::stock_objects::CornerXYZ();
-		ref->setLocation(0,0,0);
-		scene->insert( ref );
+		//CSetOfObjectsPtr ref = opengl::stock_objects::CornerXYZ();
+		//ref->setLocation(0,0,0);
+		//scene->insert( ref );
 
 		//The target is inserted
 		CDiskPtr target = opengl::CDisk::Create(0.4, 0.3);
@@ -237,32 +237,32 @@ public:
 		scene->insert( target );
 
 		//Robots
-		CPolyhedronPtr robot_real;
-		robot_real = opengl::CPolyhedron::CreateCustomPrism(robotShape.polygons[0], robotShape.heights[0]);
-		robot_real->setName("robot_real");
-		robot_real->setPose(robotpose3d);
-        robot_real->setColor(0.f,0.f,0.f);
-		robot_real->setWireframe(true);
-		robot_real->setLineWidth(2);
-		scene->insert( robot_real );
+		//CPolyhedronPtr robot_real;
+		//robot_real = opengl::CPolyhedron::CreateCustomPrism(robotShape.polygons[0], robotShape.heights[0]);
+		//robot_real->setName("robot_real");
+		//robot_real->setPose(robotpose3d);
+  //      robot_real->setColor(0.f,0.f,0.f);
+		//robot_real->setWireframe(true);
+		//robot_real->setLineWidth(2);
+		//scene->insert( robot_real );
 
-        CPolyhedronPtr robot_est;
-        robot_est = opengl::CPolyhedron::CreateCustomPrism(robotShape.polygons[0], robotShape.heights[0]);
-        robot_est->setName("robot_est");
-        robot_est->setPose(robotpose3d);
-        robot_est->setColor(1,0.4,0);
-        robot_est->setWireframe(true);
-        robot_est->setLineWidth(2);
-        scene->insert( robot_est );
+  //      CPolyhedronPtr robot_est;
+  //      robot_est = opengl::CPolyhedron::CreateCustomPrism(robotShape.polygons[0], robotShape.heights[0]);
+  //      robot_est->setName("robot_est");
+  //      robot_est->setPose(robotpose3d);
+  //      robot_est->setColor(1,0.4,0);
+  //      robot_est->setWireframe(true);
+  //      robot_est->setLineWidth(2);
+  //      scene->insert( robot_est );
 
-		CPolyhedronPtr robot_test;
-		robot_test = opengl::CPolyhedron::CreateCustomPrism(robotShape.polygons[0], robotShape.heights[0]);
-		robot_test->setName("robot_test");
-		robot_test->setPose(robotpose3d);
-        robot_test->setColor(0.f,0.8f,0.f);
-		robot_test->setWireframe(true);
-		robot_test->setLineWidth(2);
-		scene->insert( robot_test );
+		//CPolyhedronPtr robot_test;
+		//robot_test = opengl::CPolyhedron::CreateCustomPrism(robotShape.polygons[0], robotShape.heights[0]);
+		//robot_test->setName("robot_test");
+		//robot_test->setPose(robotpose3d);
+  //      robot_test->setColor(0.f,0.8f,0.f);
+		//robot_test->setWireframe(true);
+		//robot_test->setLineWidth(2);
+		//scene->insert( robot_test );
 
 
         //Initialization of the scans. One scan is simulated
@@ -273,10 +273,18 @@ public:
         //--------------------------------------------------------------------------
 
 		//The laserscan is inserted
-		CPointCloudColouredPtr gl_laser = CPointCloudColoured::Create();
-		gl_laser->setPointSize(5.f);
-		gl_laser->setPose(robotpose3d);
-		scene->insert( gl_laser );
+		//CPointCloudColouredPtr gl_laser = CPointCloudColoured::Create();
+		//gl_laser->setPointSize(5.f);
+		//gl_laser->setPose(robotpose3d);
+		//scene->insert( gl_laser );
+
+		CPlanarLaserScanPtr gl_scan = CPlanarLaserScan::Create();
+		gl_scan->enableLine(true);
+		gl_scan->enableSurface(true);
+		gl_scan->enablePoints(true);
+		gl_scan->setName(format("Laser"));
+		gl_scan->setScan(laser.m_scan);
+		scene->insert(gl_scan);
 
 		//Trajectories
 		CSetOfLinesPtr traj_lines_real = opengl::CSetOfLines::Create();
@@ -307,14 +315,14 @@ public:
 		robotpose3d.setYawPitchRoll(robotSim.getPHI(),0,0);
 
 		//Robots
-		obj = scene->getByName("robot_real");
-		obj->setPose(robotpose3d);
+		//obj = scene->getByName("robot_real");
+		//obj->setPose(robotpose3d);
 
-        obj = scene->getByName("robot_est");
-        obj->setPose(odo.laser_pose);
+  //      obj = scene->getByName("robot_est");
+  //      obj->setPose(odo.laser_pose);
 
-		obj = scene->getByName("robot_test");
-		obj->setPose(odo_test.laser_pose);
+		//obj = scene->getByName("robot_test");
+		//obj->setPose(odo_test.laser_pose);
 
 
 		const unsigned int repr_level = round(log2(round(float(odo.width)/float(odo.cols))));
@@ -322,34 +330,38 @@ public:
 		//Laser
 		CPose3D laserpose;
 		laser.m_scan.getSensorPose(laserpose);
-		CPointCloudColouredPtr gl_laser;
-		gl_laser = scene->getByClass<CPointCloudColoured> (0);
-		gl_laser->clear();
+		//CPointCloudColouredPtr gl_laser;
+		//gl_laser = scene->getByClass<CPointCloudColoured> (0);
+		//gl_laser->clear();
+		//gl_laser->setPose(robotpose3d);
+  //      for (unsigned int i=0; i<odo.cols; i++)
+  //      {
+  //          if (odo.outliers(i) == true)
+  //              gl_laser->push_back(odo_test.xx[repr_level](i), odo_test.yy[repr_level](i), 0.1, 0, 0, 1);
+  //          else
+  //              gl_laser->push_back(odo_test.xx[repr_level](i), odo_test.yy[repr_level](i), 0.1, 1-sqrt(odo_test.weights(i)), sqrt(odo_test.weights(i)), 0);
+  //      }
 
 
-        for (unsigned int i=0; i<odo.cols; i++)
-        {
-            if (odo.outliers(i) == true)
-                gl_laser->push_back(odo_test.xx[repr_level](i), odo_test.yy[repr_level](i), 0.1, 0, 0, 1);
-            else
-                gl_laser->push_back(odo_test.xx[repr_level](i), odo_test.yy[repr_level](i), 0.1, 1-sqrt(odo_test.weights(i)), sqrt(odo_test.weights(i)), 0);
-        }
+
+		CPlanarLaserScanPtr gl_scan = scene->getByClass<CPlanarLaserScan>(0);
+		gl_scan->setScan(laser.m_scan);
+		gl_scan->setPose(robotpose3d);
 
 
-        gl_laser->setPose(robotpose3d);
 
-		//Trajectories
-		opengl::CSetOfLinesPtr traj_lines_real;
-		traj_lines_real = scene->getByClass<CSetOfLines> (0);
-		traj_lines_real->appendLine(last_pose[0], last_pose[1], 0.2, new_pose[0], new_pose[1], 0.2);
+		////Trajectories
+		//opengl::CSetOfLinesPtr traj_lines_real;
+		//traj_lines_real = scene->getByClass<CSetOfLines> (0);
+		//traj_lines_real->appendLine(last_pose[0], last_pose[1], 0.2, new_pose[0], new_pose[1], 0.2);
 
-        opengl::CSetOfLinesPtr traj_lines_est;
-        traj_lines_est = scene->getByClass<CSetOfLines> (1);
-        traj_lines_est->appendLine(odo.laser_oldpose[0], odo.laser_oldpose[1], 0.2, odo.laser_pose[0], odo.laser_pose[1], 0.2);
+  //      opengl::CSetOfLinesPtr traj_lines_est;
+  //      traj_lines_est = scene->getByClass<CSetOfLines> (1);
+  //      traj_lines_est->appendLine(odo.laser_oldpose[0], odo.laser_oldpose[1], 0.2, odo.laser_pose[0], odo.laser_pose[1], 0.2);
 
-		opengl::CSetOfLinesPtr traj_lines_test;
-		traj_lines_test = scene->getByClass<CSetOfLines> (2);
-		traj_lines_test->appendLine(odo_test.laser_oldpose[0], odo_test.laser_oldpose[1], 0.2, odo_test.laser_pose[0], odo_test.laser_pose[1], 0.2);
+		//opengl::CSetOfLinesPtr traj_lines_test;
+		//traj_lines_test = scene->getByClass<CSetOfLines> (2);
+		//traj_lines_test->appendLine(odo_test.laser_oldpose[0], odo_test.laser_oldpose[1], 0.2, odo_test.laser_pose[0], odo_test.laser_pose[1], 0.2);
 
 
 		window.unlockAccess3DScene();

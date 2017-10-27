@@ -8,25 +8,6 @@ endif(COMMAND cmake_policy)
 
 FIND_PACKAGE(MRPT REQUIRED base gui opengl nav obs maps)
 
-FIND_PACKAGE(PCL REQUIRED)
-INCLUDE_DIRECTORIES(${PCL_INCLUDE_DIRS})
-LINK_DIRECTORIES(${PCL_LIBRARY_DIRS})
-ADD_DEFINITIONS(${PCL_DEFINITIONS})
-
-# Require we have pkgconfig installed to find CSM
-find_package ( PkgConfig REQUIRED )
-pkg_check_modules( CSM REQUIRED csm )
-
-IF (${CSM_FOUND})
-	MESSAGE("CSM_LIBRARY_DIRS: ${CSM_LIBRARY_DIRS}")
-	MESSAGE("CSM_LIBRARIES: ${CSM_LIBRARIES}")
-	MESSAGE("CSM_INCLUDE_DIRS: ${CSM_INCLUDE_DIRS}")
-	
-	INCLUDE_DIRECTORIES( ${CSM_INCLUDE_DIRS} ) # important !
-	LINK_DIRECTORIES( ${CSM_LIBRARY_DIRS} )	 # important !
-ELSE (${CSM_FOUND})
-	MESSAGE( FATAL_ERROR " CSM not found . Check that the environment variable PKG_CONFIG_PATH includes the path #containing the file 'csm.pc'.")
-ENDIF (${CSM_FOUND})
 
 
 ADD_LIBRARY(srf_lib
@@ -43,40 +24,6 @@ ADD_LIBRARY(srf_lib
 )
 
 
-ADD_EXECUTABLE(Laser-odometry-comparison  
-	main_laserodo_comparison.cpp
-	laserodo_comparison.h
-	map.xpm
-	map_lines_rf2o.xpm
-	map_lab_rf2o.xpm
-	map_lab.xpm
-	polar_match.h
-	polar_match.cpp
-)
-	
-TARGET_LINK_LIBRARIES(Laser-odometry-comparison 
-		${MRPT_LIBS}
-		${CSM_LIBRARIES}
-		${PCL_LIBRARIES} 
-		srf_lib)
-
-
-ADD_EXECUTABLE(Laser-odometry-experiments 
-	main_laserodo_experiments.cpp
-	laserodo_experiments.h
-	map.xpm
-	map_lines_rf2o.xpm
-	map_lab_rf2o.xpm
-	map_lab.xpm
-	polar_match.h
-	polar_match.cpp
-)
-	
-TARGET_LINK_LIBRARIES(Laser-odometry-experiments 
-		${MRPT_LIBS}
-		${CSM_LIBRARIES}
-		srf_lib)
-
 
 ADD_EXECUTABLE(Laser-odometry-randomnav 
 	main_laserodo_randomnav.cpp
@@ -91,73 +38,6 @@ TARGET_LINK_LIBRARIES(Laser-odometry-randomnav
 		${MRPT_LIBS}
 		srf_lib)
 
-
-ADD_EXECUTABLE(Laser-odometry-rawlog  
-	main_laserodo_rawlog.cpp
-	laserodo_rawlog.h
-	map_lab_big.xpm
-	map_lab.xpm
-	polar_match.h
-	polar_match.cpp
-	)
-	
-TARGET_LINK_LIBRARIES(Laser-odometry-rawlog
-		${MRPT_LIBS}
-		${CSM_LIBRARIES}
-		srf_lib)
-
-
-ADD_EXECUTABLE(Laser-odometry-targets  
-	main_laserodo_targets.cpp
-	laserodo_targets.h
-	map_lab_big.xpm
-	map_lab.xpm
-	polar_match.h
-	polar_match.cpp
-	)
-	
-TARGET_LINK_LIBRARIES(Laser-odometry-targets
-		${MRPT_LIBS}
-		${CSM_LIBRARIES}
-		srf_lib)
-
-
-ADD_EXECUTABLE(Laser-odometry-video-raw  
-	main_laserodo_raw_video.cpp
-	laserodo_raw_video.h
-	polar_match.h
-	polar_match.cpp
-	)
-	
-TARGET_LINK_LIBRARIES(Laser-odometry-video-raw
-		${MRPT_LIBS}
-		${CSM_LIBRARIES}
-		srf_lib)
-
-ADD_EXECUTABLE(Laser-odometry-video-sim  
-	main_laserodo_sim_video.cpp
-	laserodo_sim_video.h
-	polar_match.h
-	polar_match.cpp
-	)
-	
-TARGET_LINK_LIBRARIES(Laser-odometry-video-sim
-		${MRPT_LIBS}
-		${CSM_LIBRARIES}
-		srf_lib)
-
-
-ADD_EXECUTABLE(Laser-odometry-video-multirobot 
-	main_laserodo_video_multirobot.cpp
-	laserodo_video_multirobot.h
-	polar_match.h
-	polar_match.cpp
-	)
-	
-TARGET_LINK_LIBRARIES(Laser-odometry-video-multirobot
-		${MRPT_LIBS}
-		${CSM_LIBRARIES}
-		srf_lib)
 
 
 

@@ -58,10 +58,10 @@ public:
     void initializeEverything()
     {
         //Read Rawlog
-        string folder = "/usr/wiss/jaimez/Dropbox/LaserOdo - shared/Datasets/";
+        string folder = "C:/Users/jaimez/Dropbox/LaserOdo - shared/Datasets/";
         //string folder = "/home/mariano/Dropbox/LaserOdo - shared/Datasets/";
 
-        dataset_id = 4;
+        dataset_id = 3;
         string dset;
 
         switch (dataset_id) {
@@ -251,13 +251,13 @@ public:
 //            float r,g,b;
 //            utils::jet2rgb(alpha, r, g, b);
 
-        if (floor(float(rawlog_count)/threshold) != floor(float(rawlog_count-2)/threshold))
+//        if (floor(float(rawlog_count)/threshold) != floor(float(rawlog_count-2)/threshold))
             gl_laser->clear();
 
         //if ((iter+4) % 5 == 0)
         {
             for (unsigned int i=0; i<laser.m_segments; i++)
-                if ((laser.m_scan.scan[i] < 3.8f)&&(laser.m_scan.scan[i] > 0.05f))
+                if ((laser.m_scan.scan[i] < 15.8f)&&(laser.m_scan.scan[i] > 0.05f))
                 {
                     const float tita = -0.5f*laser.m_scan.aperture + (float(i) + 0.5f)*laser.m_scan.aperture/float(laser.m_segments);
                     const float x = laser.m_scan.scan[i]*cos(tita);

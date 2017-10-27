@@ -186,6 +186,8 @@ int pm_readScan (mrpt::obs::CObservation2DRangeScan laser, PMScan *ls )
     //ls->bad[i] = !(ls->r[i] > 0.f);
 //    printf("\n r[i] = %f, bad = %d", ls->r[i], ls->bad[i]);
   }
+
+  return 1;
 }
 
 
